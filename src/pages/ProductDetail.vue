@@ -43,6 +43,13 @@ onMounted(() => {
   if (u) user.value = u;
 });
 
+const relatedProducts = computed(() => {
+  if (!product.value) return [];
+  return products.value.filter(
+    p => p.category === product.value.category && p.id !== product.value.id
+  );
+});
+
 const filterByCategory = (cat) => {
   router.push({ name: 'ProductList', query: { category: cat } });
 };
@@ -51,6 +58,10 @@ const handleBuy = (p) => {
   if (!user.value) {
     alert("Vui lòng đăng nhập để mua hàng!");
     router.push("/login");
+    return;
+  }
+  if (p.stock <= 0) {
+    alert("Sản phẩm đã hết hàng, không thể thêm vào giỏ!");
     return;
   }
   store.commit("add_cart", p);
@@ -121,7 +132,6 @@ const logout = () => {
                 <li v-if="!user">
                   <router-link class="dropdown-item" to="/register">Đăng ký</router-link>
                 </li>
-
                 <li v-if="user">
                   <router-link class="dropdown-item" to="/profile">Profile</router-link>
                 </li>
@@ -144,12 +154,46 @@ const logout = () => {
             <h3>{{ product.price.toLocaleString() }} VNĐ</h3>
             <p><strong>Danh mục:</strong> {{ product.category }}</p>
             <p>{{ product.description || "Không có mô tả sản phẩm." }}</p>
-            <button @click="handleBuy(product)" class="btn btn-primary">Thêm vào giỏ</button>
+            <p><strong>Số lượng tồn:</strong> {{ product.stock }}</p>
+            <button 
+              @click="handleBuy(product)" 
+              class="btn btn-primary"
+              :disabled="product.stock <= 0"
+              title="Sản phẩm đã hết hàng"
+            >
+              Thêm vào giỏ
+            </button>
           </div>
         </div>
         <div v-else>
           <p class="text-center text-danger mt-5">Sản phẩm không tồn tại hoặc không được tìm thấy!</p>
         </div>
+
+        <div class="related-products mt-5">
+          <h3>Sản phẩm liên quan</h3>
+          <div v-if="relatedProducts.length === 0" class="text-muted">
+            <p>Không có sản phẩm liên quan.</p>
+          </div>
+          <div v-else class="d-flex flex-wrap gap-3">
+            <div v-for="p in relatedProducts" :key="p.id" class="product-card" style="width: 200px;">
+              <img :src="p.image" alt="product image" class="img-fluid rounded mb-2" />
+              <h5>{{ p.name }}</h5>
+              <p>Giá: {{ p.price.toLocaleString() }} VNĐ</p>
+              <button 
+                class="btn btn-outline-primary w-100" 
+                @click="handleBuy(p)"
+                :disabled="p.stock <= 0"
+                title="Sản phẩm đã hết hàng"
+              >
+                Thêm vào giỏ
+              </button>
+              <router-link :to="`/product/${p.id}`" class="btn btn-outline-secondary w-100 mt-1">
+                Chi tiết
+              </router-link>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -173,5 +217,31 @@ img {
 
 .text-danger {
   color: #dc3545;
+}
+
+.related-products {
+  margin-top: 40px;
+}
+
+.product-card {
+  border: 1px solid #ddd;
+  background: #fff;
+  padding: 15px;
+  text-align: center;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.1);
+  transition: 0.3s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.15);
+}
+
+.product-card img {
+  height: 130px;
+  object-fit: cover;
+  border-radius: 6px;
+  margin-bottom: 8px;
 }
 </style>

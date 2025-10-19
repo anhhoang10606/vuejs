@@ -12,25 +12,33 @@ const categories = ref([]);
 const filteredProducts = ref([]);
 
 const categoryFilter = ref(route.query.category || "");
+const priceRange = ref({
+  min: route.query.minPrice ? Number(route.query.minPrice) : null,
+  max: route.query.maxPrice ? Number(route.query.maxPrice) : null
+});
+
 const countCart = computed(() => store.getters.countCart);
 const user = ref(JSON.parse(localStorage.getItem("user")) || null);
 
 const filterProducts = () => {
-  if (!categoryFilter.value) {
-    filteredProducts.value = products.value;
-  } else {
-    filteredProducts.value = products.value.filter(
-      (p) => p.category === categoryFilter.value
-    );
-  }
+  filteredProducts.value = products.value.filter((p) => {
+    const inCategory = categoryFilter.value ? p.category === categoryFilter.value : true;
+    const inPrice =
+      (priceRange.value.min == null || p.price >= priceRange.value.min) &&
+      (priceRange.value.max == null || p.price <= priceRange.value.max);
+    return inCategory && inPrice;
+  });
 };
 
 watch(
-  () => route.query.category,
-  (newCategory) => {
-    categoryFilter.value = newCategory || "";
+  () => route.query,
+  (newQuery) => {
+    categoryFilter.value = newQuery.category || "";
+    priceRange.value.min = newQuery.minPrice ? Number(newQuery.minPrice) : null;
+    priceRange.value.max = newQuery.maxPrice ? Number(newQuery.maxPrice) : null;
     filterProducts();
-  }
+  },
+  { immediate: true }
 );
 
 onMounted(() => {
@@ -41,13 +49,27 @@ onMounted(() => {
 });
 
 const filterByCategory = (cat) => {
-  router.push({ name: "ProductList", query: { category: cat } });
+  const query = { ...route.query, category: cat };
+  router.push({ name: "ProductList", query });
+};
+
+const applyPriceFilter = () => {
+  const query = { ...route.query };
+  if (priceRange.value.min != null) query.minPrice = priceRange.value.min;
+  else delete query.minPrice;
+  if (priceRange.value.max != null) query.maxPrice = priceRange.value.max;
+  else delete query.maxPrice;
+  router.push({ name: "ProductList", query });
 };
 
 const handleBuy = (p) => {
   if (!user.value) {
     alert("Vui lòng đăng nhập để mua hàng!");
     router.push("/login");
+    return;
+  }
+  if (p.stock <= 0) {
+    alert("Sản phẩm đã hết hàng, không thể thêm vào giỏ!");
     return;
   }
   store.commit("add_cart", p);
@@ -75,7 +97,36 @@ const logout = () => {
         >
           {{ cat }}
         </li>
+        <li
+          class="list-group-item list-group-item-action"
+          @click="filterByCategory('')"
+          style="cursor: pointer"
+        >
+          Tất cả danh mục
+        </li>
       </ul>
+
+      <hr />
+      <h5>Lọc theo khoảng giá</h5>
+      <div class="mb-3">
+        <label>Giá từ (VNĐ)</label>
+        <input
+          type="number"
+          v-model.number="priceRange.min"
+          class="form-control"
+          placeholder="Giá thấp nhất"
+        />
+      </div>
+      <div class="mb-3">
+        <label>Đến (VNĐ)</label>
+        <input
+          type="number"
+          v-model.number="priceRange.max"
+          class="form-control"
+          placeholder="Giá cao nhất"
+        />
+      </div>
+      <button @click="applyPriceFilter" class="btn btn-primary w-100">Áp dụng lọc giá</button>
     </aside>
 
     <div class="flex-grow-1">
@@ -140,8 +191,17 @@ const logout = () => {
                 <p class="card-text"><strong>Danh mục:</strong> {{ p.category }}</p>
                 <p class="card-text">{{ p.description || "Không có mô tả" }}</p>
 
+                <p class="card-text"><strong>Số lượng tồn:</strong> {{ p.stock }}</p>
+                
                 <router-link :to="`/product/${p.id}`" class="btn btn-primary me-2">Xem chi tiết</router-link>
-                <button @click="handleBuy(p)" class="btn btn-success">Thêm vào giỏ</button>
+                <button 
+                  @click="handleBuy(p)" 
+                  class="btn btn-success" 
+                  :disabled="p.stock <= 0" 
+                  title="Sản phẩm đã hết hàng"
+                >
+                  Thêm vào giỏ
+                </button>
               </div>
             </div>
           </div>

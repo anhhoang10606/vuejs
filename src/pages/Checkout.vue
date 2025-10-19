@@ -2,9 +2,7 @@
 import { ref, computed, reactive, onMounted } from 'vue'
 import { useStore } from 'vuex'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
 
-const API = import.meta.env.VITE_URL_API || 'http://localhost:3000'
 const store = useStore()
 const router = useRouter()
 
@@ -26,9 +24,7 @@ const orderInfo = reactive({
   discount: 0
 })
 
-const discountedTotal = computed(() => {
-  return totalCart.value - orderInfo.discount
-})
+const discountedTotal = computed(() => totalCart.value - orderInfo.discount)
 
 onMounted(() => {
   const u = JSON.parse(localStorage.getItem('user') || '{}')
@@ -56,7 +52,7 @@ const clearData = () => {
   orderInfo.pay_type = 'cod'
   orderInfo.coupon = ''
   orderInfo.discount = 0
-  store.state.carts = []
+  store.commit('clear_cart')
 }
 
 const handleRemove = (id) => {
@@ -64,6 +60,10 @@ const handleRemove = (id) => {
 }
 
 const increaseQuantity = (item) => {
+  if(item.quantity + 1 > item.stock){
+    alert(`Sản phẩm "${item.name}" đã đạt số lượng tồn kho tối đa`)
+    return
+  }
   item.quantity++
   store.commit('update_cart', item)
 }
@@ -89,9 +89,19 @@ const applyCoupon = () => {
   }
 }
 
-const handleSubmit = async () => {
+const handleSubmit = () => {
+  for (const item of carts.value) {
+    if (item.quantity > item.stock) {
+      alert(`Sản phẩm "${item.name}" vượt quá số lượng tồn kho! Vui lòng điều chỉnh lại.`)
+      return
+    }
+  }
+
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}')
-  const payload = {
+  const orders = JSON.parse(localStorage.getItem('orders')) || []
+
+  const newOrder = {
+    id: Date.now(),
     name: orderInfo.name,
     sdt: orderInfo.sdt,
     address: orderInfo.address,
@@ -111,11 +121,12 @@ const handleSubmit = async () => {
     user_id: currentUser ? currentUser.id : null
   }
 
-  const res = await axios.post(`${API}/orders`, payload)
-  if (res.status === 201) {
-    clearData()
-    alert('Đặt hàng thành công!')
-  }
+  orders.push(newOrder)
+  localStorage.setItem('orders', JSON.stringify(orders))
+
+  clearData()
+  alert('Đặt hàng thành công')
+  router.push({ name: 'OrderSuccess', params: { orderId: newOrder.id } })
 }
 </script>
 
@@ -133,10 +144,7 @@ const handleSubmit = async () => {
             <router-link to="/checkout" class="nav-link position-relative">
               <i class="bi bi-cart3 fs-4"></i>
               Giỏ hàng
-              <span
-                v-if="countCart > 0"
-                class="badge bg-danger position-absolute top-0 start-100 translate-middle"
-              >
+              <span v-if="countCart > 0" class="badge bg-danger position-absolute top-0 start-100 translate-middle">
                 {{ countCart }}
               </span>
             </router-link>

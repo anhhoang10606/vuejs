@@ -1,9 +1,12 @@
 <script setup>
 import { ref, reactive, onMounted } from "vue";
 import { useRouter } from "vue-router";
+import Orders from './Orders.vue'
 
 const router = useRouter();
 const currentView = ref("products");
+
+const lowStockThreshold = 5;
 
 const products = ref([]);
 const users = ref(JSON.parse(localStorage.getItem("users")) || []);
@@ -19,6 +22,7 @@ const form = reactive({
   category: "",
   image: "",
   description: "",
+  stock: 0,
 });
 const isEditing = ref(false);
 
@@ -53,6 +57,7 @@ const resetForm = () => {
   form.category = "";
   form.image = "";
   form.description = "";
+  form.stock = 0;
   isEditing.value = false;
 };
 
@@ -120,7 +125,7 @@ const deleteUser = (index) => {
     saveUsers();
   }
 };
-
+// voucher ch có date, hạn sd
 const resetVoucherForm = () => {
   voucherForm.code = "";
   voucherForm.discount = 0;
@@ -230,25 +235,67 @@ const logout = () => {
           <div class="card p-3 mb-4 shadow-sm">
             <h5>{{ isEditing ? "Sửa sản phẩm" : "Thêm sản phẩm" }}</h5>
             <div class="row g-3">
-              <div class="col-md-6">
-                <input v-model="form.name" class="form-control" placeholder="Tên sản phẩm" />
+              <div class="col-md-4">
+                <input
+                  v-model="form.name"
+                  class="form-control"
+                  placeholder="Tên sản phẩm"
+                />
+              </div>
+              <div class="col-md-4">
+                <input
+                  v-model="form.price"
+                  type="number"
+                  class="form-control"
+                  placeholder="Giá"
+                />
+              </div>
+              <div class="col-md-4">
+                <input
+                  v-model="form.stock"
+                  type="number"
+                  class="form-control"
+                  placeholder="Số lượng tồn"
+                  min="0"
+                />
               </div>
               <div class="col-md-6">
-                <input v-model="form.price" type="number" class="form-control" placeholder="Giá" />
+                <input
+                  v-model="form.category"
+                  class="form-control"
+                  placeholder="Danh mục"
+                />
               </div>
               <div class="col-md-6">
-                <input v-model="form.category" class="form-control" placeholder="Danh mục" />
-              </div>
-              <div class="col-md-6">
-                <input v-model="form.image" class="form-control" placeholder="Link hình ảnh" />
+                <input
+                  v-model="form.image"
+                  class="form-control"
+                  placeholder="Link hình ảnh"
+                />
               </div>
               <div class="col-12">
-                <textarea v-model="form.description" class="form-control" placeholder="Mô tả sản phẩm"></textarea>
+                <textarea
+                  v-model="form.description"
+                  class="form-control"
+                  placeholder="Mô tả sản phẩm"
+                ></textarea>
               </div>
             </div>
             <div class="mt-3">
-              <button v-if="!isEditing" @click="addProduct" class="btn btn-primary me-2">Thêm</button>
-              <button v-else @click="updateProduct" class="btn btn-success me-2">Cập nhật</button>
+              <button
+                v-if="!isEditing"
+                @click="addProduct"
+                class="btn btn-primary me-2"
+              >
+                Thêm
+              </button>
+              <button
+                v-else
+                @click="updateProduct"
+                class="btn btn-success me-2"
+              >
+                Cập nhật
+              </button>
               <button @click="resetForm" class="btn btn-secondary">Hủy</button>
             </div>
           </div>
@@ -259,6 +306,7 @@ const logout = () => {
                 <tr>
                   <th>Tên</th>
                   <th>Giá</th>
+                  <th>Số lượng tồn</th>
                   <th>Danh mục</th>
                   <th>Hình</th>
                   <th>Mô tả</th>
@@ -269,14 +317,32 @@ const logout = () => {
                 <tr v-for="p in products" :key="p.id">
                   <td>{{ p.name }}</td>
                   <td>{{ p.price }}</td>
+                  <td>
+                    {{ p.stock }}
+                    <span
+                      v-if="p.stock <= lowStockThreshold"
+                      class="text-danger fw-bold ms-2"
+                      >Sắp hết hàng!</span
+                    >
+                  </td>
                   <td>{{ p.category }}</td>
                   <td>
                     <img :src="p.image" width="60" />
                   </td>
                   <td>{{ p.description }}</td>
                   <td>
-                    <button class="btn btn-sm btn-warning me-2" @click="editProduct(p)">Sửa</button>
-                    <button class="btn btn-sm btn-danger" @click="deleteProduct(p.id)">Xóa</button>
+                    <button
+                      class="btn btn-sm btn-warning me-2"
+                      @click="editProduct(p)"
+                    >
+                      Sửa
+                    </button>
+                    <button
+                      class="btn btn-sm btn-danger"
+                      @click="deleteProduct(p.id)"
+                    >
+                      Xóa
+                    </button>
                   </td>
                 </tr>
               </tbody>
@@ -291,18 +357,42 @@ const logout = () => {
             <h5>{{ isEditingUser ? "Sửa người dùng" : "Thêm người dùng" }}</h5>
             <div class="row g-3">
               <div class="col-md-4">
-                <input v-model="userForm.username" class="form-control" placeholder="Tên đăng nhập" />
+                <input
+                  v-model="userForm.username"
+                  class="form-control"
+                  placeholder="Tên đăng nhập"
+                />
               </div>
               <div class="col-md-4">
-                <input v-model="userForm.email" class="form-control" placeholder="Email" />
+                <input
+                  v-model="userForm.email"
+                  class="form-control"
+                  placeholder="Email"
+                />
               </div>
               <div class="col-md-4">
-                <input v-model="userForm.password" class="form-control" placeholder="Mật khẩu" />
+                <input
+                  v-model="userForm.password"
+                  class="form-control"
+                  placeholder="Mật khẩu"
+                />
               </div>
             </div>
             <div class="mt-3">
-              <button v-if="!isEditingUser" @click="addUser" class="btn btn-primary me-2">Thêm</button>
-              <button v-else @click="updateUser" class="btn btn-success me-2">Cập nhật</button>
+              <button
+                v-if="!isEditingUser"
+                @click="addUser"
+                class="btn btn-primary me-2"
+              >
+                Thêm
+              </button>
+              <button
+                v-else
+                @click="updateUser"
+                class="btn btn-success me-2"
+              >
+                Cập nhật
+              </button>
               <button @click="resetUserForm" class="btn btn-secondary">Hủy</button>
             </div>
           </div>
@@ -323,8 +413,18 @@ const logout = () => {
                   <td>{{ u.email }}</td>
                   <td>{{ u.password }}</td>
                   <td>
-                    <button class="btn btn-sm btn-warning me-2" @click="editUser(u, index)">Sửa</button>
-                    <button class="btn btn-sm btn-danger" @click="deleteUser(index)">Xóa</button>
+                    <button
+                      class="btn btn-sm btn-warning me-2"
+                      @click="editUser(u, index)"
+                    >
+                      Sửa
+                    </button>
+                    <button
+                      class="btn btn-sm btn-danger"
+                      @click="deleteUser(index)"
+                    >
+                      Xóa
+                    </button>
                   </td>
                 </tr>
               </tbody>
@@ -333,12 +433,7 @@ const logout = () => {
         </div>
 
         <div v-if="currentView === 'orders'">
-          <h3 class="fw-bold text-primary mb-3">Danh sách đơn hàng</h3>
-          <ul class="list-group shadow">
-            <li v-for="o in orders" :key="o.id" class="list-group-item">
-              Mã đơn: {{ o.id }} — Người mua: {{ o.username }} — Tổng: {{ o.total }} VNĐ — {{ o.status }}
-            </li>
-          </ul>
+          <Orders />
         </div>
 
         <div v-if="currentView === 'stats'">
@@ -352,7 +447,11 @@ const logout = () => {
             <h5>{{ isEditingVoucher ? "Sửa mã khuyến mãi" : "Thêm mã khuyến mãi" }}</h5>
             <div class="row g-3">
               <div class="col-md-6">
-                <input v-model="voucherForm.code" class="form-control" placeholder="Mã khuyến mãi" />
+                <input
+                  v-model="voucherForm.code"
+                  class="form-control"
+                  placeholder="Mã khuyến mãi"
+                />
               </div>
               <div class="col-md-6">
                 <input
@@ -366,9 +465,23 @@ const logout = () => {
               </div>
             </div>
             <div class="mt-3">
-              <button v-if="!isEditingVoucher" @click="addVoucher" class="btn btn-primary me-2">Thêm</button>
-              <button v-else @click="updateVoucher" class="btn btn-success me-2">Cập nhật</button>
-              <button @click="resetVoucherForm" class="btn btn-secondary">Hủy</button>
+              <button
+                v-if="!isEditingVoucher"
+                @click="addVoucher"
+                class="btn btn-primary me-2"
+              >
+                Thêm
+              </button>
+              <button
+                v-else
+                @click="updateVoucher"
+                class="btn btn-success me-2"
+              >
+                Cập nhật
+              </button>
+              <button @click="resetVoucherForm" class="btn btn-secondary">
+                Hủy
+              </button>
             </div>
           </div>
 
@@ -386,8 +499,18 @@ const logout = () => {
                   <td>{{ v.code }}</td>
                   <td>{{ v.discount }}%</td>
                   <td>
-                    <button class="btn btn-sm btn-warning me-2" @click="editVoucher(v, index)">Sửa</button>
-                    <button class="btn btn-sm btn-danger" @click="deleteVoucher(index)">Xóa</button>
+                    <button
+                      class="btn btn-sm btn-warning me-2"
+                      @click="editVoucher(v, index)"
+                    >
+                      Sửa
+                    </button>
+                    <button
+                      class="btn btn-sm btn-danger"
+                      @click="deleteVoucher(index)"
+                    >
+                      Xóa
+                    </button>
                   </td>
                 </tr>
               </tbody>
@@ -444,5 +567,14 @@ const logout = () => {
   flex: 1;
   background: #fff;
   overflow-y: auto;
+}
+.text-danger {
+  color: #dc3545;
+}
+.fw-bold {
+  font-weight: 700;
+}
+.ms-2 {
+  margin-left: 0.5rem;
 }
 </style>

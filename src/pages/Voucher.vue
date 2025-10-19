@@ -17,7 +17,7 @@ const countCart = computed(() => store.getters.countCart);
 const user = ref(JSON.parse(localStorage.getItem("user")) || null);
 
 const addVoucher = () => {
-  if (!newVoucherCode.value) {
+  if (!newVoucherCode.value) { 
     alert("Vui lòng nhập mã khuyến mãi");
     return;
   }

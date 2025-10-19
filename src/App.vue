@@ -18,7 +18,7 @@ import Lab3 from "./components/Lab3.vue";
  * điểm mạnh
  * điểm yếu
  * ước mơ
- * điểm trung bình
+ * điểm tb
  */
 const products = reactive([
     {

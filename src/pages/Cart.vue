@@ -29,7 +29,23 @@ const handleRemove = (id) => {
   store.commit('remove_cart', id);
 };
 
+const handleQuantityChange = (item, newQuantity) => {
+  if (newQuantity < 1) return;
+  if (newQuantity > item.stock) {
+    alert(`Sản phẩm "${item.name}" vượt quá số lượng tồn kho!`);
+    return;
+  }
+  store.commit('update_cart_quantity', { id: item.id, quantity: newQuantity });
+};
+
 const handleSubmit = async () => {
+  for (const item of carts.value) {
+    if (item.quantity > item.stock) {
+      alert(`Sản phẩm "${item.name}" vượt quá số lượng tồn kho! Vui lòng điều chỉnh lại.`);
+      return;
+    }
+  }
+
   const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
   const payload = {
     name: orderInfo.name,
@@ -54,6 +70,7 @@ const handleSubmit = async () => {
     if (res.status === 201) {
       clearData();
       alert('Đã mua hàng thành công!');
+      store.commit('clear_cart');
     }
   } catch (error) {
     alert('Có lỗi xảy ra khi thanh toán!');
@@ -66,7 +83,6 @@ const handleSubmit = async () => {
   <div class="container">
     <h1 class="h4 mb-3">Thanh toán</h1>
     <div class="row g-4">
-      <!-- Left: Form -->
       <div class="col-lg-8">
         <div class="card shadow-sm">
           <div class="card-body p-4">
@@ -112,8 +128,7 @@ const handleSubmit = async () => {
           </div>
         </div>
       </div>
-
-      <!-- Right: Cart summary -->
+      
       <div class="col-lg-4">
         <div class="card shadow-sm">
           <div class="card-body p-3">
@@ -129,7 +144,17 @@ const handleSubmit = async () => {
               <tbody>
                 <tr v-for="cart in carts" :key="cart.id">
                   <td>{{ cart.name }}</td>
-                  <td class="text-center">{{ cart.quantity }}</td>
+                  <td class="text-center">
+                    <input 
+                      type="number" 
+                      :max="cart.stock" 
+                      :min="1" 
+                      v-model.number="cart.quantity" 
+                      @change="handleQuantityChange(cart, cart.quantity)" 
+                      class="form-control form-control-sm text-center" 
+                      style="max-width: 70px;" 
+                    />
+                  </td>
                   <td class="text-end">
                     <button class="btn btn-sm btn-danger" @click="handleRemove(cart.id)">Xoá</button>
                   </td>

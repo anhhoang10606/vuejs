@@ -15,14 +15,6 @@ const favorites = ref([])
 const vouchers = ref([])
 const receivedVouchers = ref([])
 
-const relatedProducts = computed(() => {
-  if (!searchResults.value || searchResults.value.length === 0) return []
-  const category = searchResults.value[0].category
-  return products.value.filter(
-    p => p.category === category && !searchResults.value.includes(p)
-  )
-})
-
 onMounted(() => {
   const saved = JSON.parse(localStorage.getItem("products")) || []
   products.value = saved
@@ -50,6 +42,10 @@ const handleBuy = (product) => {
   if (!user.value) {
     alert("Vui lòng đăng nhập để mua hàng!")
     router.push("/login")
+    return
+  }
+  if (product.stock <= 0) {
+    alert("Sản phẩm đã hết hàng, không thể thêm vào giỏ!")
     return
   }
   store.commit("add_cart", product)
@@ -206,6 +202,8 @@ const receiveVoucher = (voucher) => {
           <button
             @click="handleBuy(p)"
             class="btn btn-primary w-100 mt-2"
+            :disabled="p.stock <= 0"
+            title="Sản phẩm đã hết hàng"
           >
             Thêm vào giỏ
           </button>
@@ -215,27 +213,6 @@ const receiveVoucher = (voucher) => {
           >
             Chi tiết
           </router-link>
-        </div>
-      </div>
-      <h2 class="mt-5 mb-3 text-center">Sản phẩm liên quan</h2>
-      <div
-        v-if="!relatedProducts || relatedProducts.length === 0"
-        class="text-center text-muted"
-      >
-        <p>Không có sản phẩm liên quan.</p>
-      </div>
-      <div
-        v-else
-        class="products d-flex flex-wrap justify-content-center gap-3"
-      >
-        <div v-for="p in relatedProducts" :key="p.id" class="product-card">
-          <img :src="p.image" alt="img" />
-          <h3>{{ p.name }}</h3>
-          <p>Giá: {{ p.price.toLocaleString() }} VNĐ</p>
-          <p>Danh mục: {{ p.category }}</p>
-          <button @click="handleBuy(p)" class="btn btn-outline-primary w-100">
-            Thêm vào giỏ
-          </button>
         </div>
       </div>
     </div>

@@ -14,28 +14,27 @@ const profile = ref({
 });
 
 const password = ref({ old: "", new: "" });
-
-const orders = ref([
-  { id: "DH001", date: "2025-10-01", total: 350000, status: "Đang xử lý" },
-  { id: "DH002", date: "2025-09-20", total: 290000, status: "Hoàn tất" },
-]);
-
+const orders = ref([]);
 const userVouchers = computed(() => user.value?.receivedVouchers || []);
-
 const address = ref("");
-
 const products = ref([]);
-
 const favorites = ref([]);
 
-const applyVoucher = (code) => {
-  navigator.clipboard.writeText(code).then(() => {
-    alert(`Mã giảm giá "${code}" đã được sao chép!`);
-  }).catch(() => {
-    alert('Không thể sao chép mã giảm giá.');
-  });
+const formatDate = (timestamp) => {
+  if (!timestamp) return '';
+  return new Date(timestamp).toLocaleString('vi-VN');
+};
 
-}
+const totalSpent = computed(() => {
+  return orders.value.reduce((sum, order) => sum + (order.total || 0), 0);
+});
+
+const applyVoucher = (code) => {
+  navigator.clipboard
+    .writeText(code)
+    .then(() => alert(`Mã giảm giá "${code}" đã được sao chép!`))
+    .catch(() => alert("Không thể sao chép mã giảm giá."));
+};
 
 onMounted(() => {
   const u = JSON.parse(localStorage.getItem("user"));
@@ -47,6 +46,7 @@ onMounted(() => {
   }
   products.value = JSON.parse(localStorage.getItem("products")) || [];
   favorites.value = JSON.parse(localStorage.getItem("favorites")) || [];
+  orders.value = JSON.parse(localStorage.getItem("orders")) || [];
 });
 
 function updateProfile() {
@@ -77,11 +77,32 @@ function changePassword() {
 function cancelOrder(id) {
   const order = orders.value.find((o) => o.id === id);
   if (order) order.status = "Đã hủy";
+  localStorage.setItem("orders", JSON.stringify(orders.value));
 }
 
 function reorder(id) {
+  const order = orders.value.find(o => o.id === id);
+  if (!order) {
+    alert("Không tìm thấy đơn hàng");
+    return;
+  }
+
+  let cartsCurrent = JSON.parse(localStorage.getItem("carts")) || [];
+
+  order.items.forEach(item => {
+    const existing = cartsCurrent.find(c => c.id === item.id);
+    if (existing) {
+      existing.quantity += item.quantity;
+    } else {
+      cartsCurrent.push({ ...item });
+    }
+  });
+
+  localStorage.setItem("carts", JSON.stringify(cartsCurrent));
+
   alert("Đơn hàng " + id + " đã được thêm lại vào giỏ!");
 }
+
 
 function saveAddress() {
   localStorage.setItem("address", address.value);
@@ -123,7 +144,6 @@ const favoriteProducts = computed(() => {
           <img src="/Logo.png" alt="Logo" width="40" height="40" class="me-2" />
           AnhHoangShop
         </router-link>
-
         <form class="d-flex mx-auto w-50">
           <input
             class="form-control me-2"
@@ -132,14 +152,10 @@ const favoriteProducts = computed(() => {
             v-model="searchQuery"
           />
         </form>
-
         <ul class="navbar-nav ms-auto">
           <li class="nav-item me-3">
-            <router-link to="/cart" class="nav-link">
-              Giỏ hàng
-            </router-link>
+            <router-link to="/cart" class="nav-link">Giỏ hàng</router-link>
           </li>
-
           <li class="nav-item dropdown">
             <a
               class="nav-link dropdown-toggle"
@@ -158,7 +174,6 @@ const favoriteProducts = computed(() => {
               <li v-if="!user">
                 <router-link class="dropdown-item" to="/register">Đăng ký</router-link>
               </li>
-
               <li v-if="user">
                 <router-link class="dropdown-item" to="/profile">Profile</router-link>
               </li>
@@ -173,7 +188,6 @@ const favoriteProducts = computed(() => {
 
     <div class="container mt-4">
       <h3 class="fw-bold mb-4">Thông tin người dùng</h3>
-
       <ul class="nav nav-tabs mb-3">
         <li class="nav-item">
           <a class="nav-link" :class="{ active: activeTab === 'info' }" @click="activeTab = 'info'">Thông tin cá nhân</a>
@@ -192,6 +206,9 @@ const favoriteProducts = computed(() => {
         </li>
         <li class="nav-item">
           <a class="nav-link" :class="{ active: activeTab === 'favorite' }" @click="activeTab = 'favorite'">Sản phẩm yêu thích</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" :class="{ active: activeTab === 'statistics' }" @click="activeTab = 'statistics'">Thống kê khách hàng</a>
         </li>
       </ul>
 
@@ -250,12 +267,12 @@ const favoriteProducts = computed(() => {
           <tbody>
             <tr v-for="order in orders" :key="order.id">
               <td>{{ order.id }}</td>
-              <td>{{ order.date }}</td>
-              <td>{{ order.total }}₫</td>
+              <td>{{ formatDate(order.created_at) }}</td>
+              <td>{{ order.total.toLocaleString() }}₫</td>
               <td>{{ order.status }}</td>
               <td>
                 <button
-                  v-if="order.status === 'Đang xử lý'"
+                  v-if="order.status === 'Đang xử lý' || order.status === 'pending'"
                   class="btn btn-sm btn-danger"
                   @click="cancelOrder(order.id)"
                 >
@@ -271,16 +288,24 @@ const favoriteProducts = computed(() => {
       </div>
       <div v-if="activeTab === 'voucher'" class="card p-4 shadow-sm">
         <h5>Mã khuyến mãi của bạn</h5>
-          <div v-if="userVouchers.length === 0" class="text-muted">Bạn chưa nhận mã khuyến mãi nào!</div>
-            <ul v-else>
-              <li v-for="voucher in userVouchers" :key="voucher.code" class="d-flex align-items-center justify-content-between">
-          <div>
-            <b>{{ voucher.code }}</b> - Giảm {{ voucher.discount }}%
-          </div>
-      <button class="btn btn-primary btn-sm" @click="applyVoucher(voucher.code)">Áp dụng</button>
-              </li>
-            </ul>
-    </div>
+        <div v-if="userVouchers.length === 0" class="text-muted">
+          Bạn chưa nhận mã khuyến mãi nào!
+        </div>
+        <ul v-else>
+          <li
+            v-for="voucher in userVouchers"
+            :key="voucher.code"
+            class="d-flex align-items-center justify-content-between"
+          >
+            <div>
+              <b>{{ voucher.code }}</b> - Giảm {{ voucher.discount }}%
+            </div>
+            <button class="btn btn-primary btn-sm" @click="applyVoucher(voucher.code)">
+              Áp dụng
+            </button>
+          </li>
+        </ul>
+      </div>
       <div v-if="activeTab === 'address'" class="card p-4 shadow-sm">
         <h5>Địa chỉ giao hàng</h5>
         <div class="mb-3">
@@ -303,6 +328,10 @@ const favoriteProducts = computed(() => {
             <router-link :to="`/product/${p.id}`" class="btn btn-outline-secondary w-100">Chi tiết</router-link>
           </div>
         </div>
+      </div>
+      <div v-if="activeTab === 'statistics'" class="card p-4 shadow-sm">
+        <h5>Thống kê khách hàng</h5>
+        <p>Tổng số tiền chi tiêu: <strong>{{ totalSpent.toLocaleString() }}₫</strong></p>
       </div>
     </div>
   </div>
