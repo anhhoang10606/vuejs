@@ -126,7 +126,7 @@ const logout = () => {
           placeholder="Giá cao nhất"
         />
       </div>
-      <button @click="applyPriceFilter" class="btn btn-primary w-100">Áp dụng lọc giá</button>
+      <button @click="applyPriceFilter" class="btn btn-primary w-100">Áp dụng</button>
     </aside>
 
     <div class="flex-grow-1">
@@ -191,8 +191,10 @@ const logout = () => {
                 <p class="card-text"><strong>Danh mục:</strong> {{ p.category }}</p>
                 <p class="card-text">{{ p.description || "Không có mô tả" }}</p>
 
-                <p class="card-text"><strong>Số lượng tồn:</strong> {{ p.stock }}</p>
-                
+                <p class="card-text" :class="{'text-success': p.stock > 0, 'text-danger': p.stock === 0}">
+                  {{ p.stock > 0 ? 'Còn hàng' : 'Hết hàng' }}
+                </p>
+
                 <router-link :to="`/product/${p.id}`" class="btn btn-primary me-2">Xem chi tiết</router-link>
                 <button 
                   @click="handleBuy(p)" 

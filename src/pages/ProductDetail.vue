@@ -154,7 +154,9 @@ const logout = () => {
             <h3>{{ product.price.toLocaleString() }} VNĐ</h3>
             <p><strong>Danh mục:</strong> {{ product.category }}</p>
             <p>{{ product.description || "Không có mô tả sản phẩm." }}</p>
-            <p><strong>Số lượng tồn:</strong> {{ product.stock }}</p>
+            <p :class="{'text-success': product.stock > 0, 'text-danger': product.stock === 0}">
+              {{ product.stock > 0 ? 'Còn hàng' : 'Hết hàng' }}
+            </p>
             <button 
               @click="handleBuy(product)" 
               class="btn btn-primary"

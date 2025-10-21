@@ -6,6 +6,7 @@ import User from "../pages/User.vue";
 import profile from "../pages/profile.vue";
 import ProductList from "@/pages/ProductList.vue";
 import ProductDetail from "@/pages/ProductDetail.vue";
+import Cart from "@/pages/Cart.vue";
 import Checkout from "@/pages/Checkout.vue";
 import OrderSuccess from "@/pages/OrderSuccess.vue";
 import Voucher from "@/pages/Voucher.vue";
@@ -26,6 +27,7 @@ const routes = [
   { path: "/product/:id", name: 'ProductDetail', component: ProductDetail },
   { path: "/checkout", component: Checkout, meta: { requiresAuth: true } },
   { path: "/voucher", component: Voucher, meta: { requiresAuth: true } },
+  { path: "/cart", name: 'Cart', component: Cart },
   { path: "/order-success/:orderId", name: 'OrderSuccess', component: OrderSuccess, meta: { requiresAuth: true } }
 ];
 

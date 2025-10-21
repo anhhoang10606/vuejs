@@ -1,8 +1,10 @@
 <script setup>
 import { ref, onMounted, computed } from "vue";
+import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
+const store = useStore();
 const user = ref(null);
 const activeTab = ref("info");
 
@@ -19,6 +21,8 @@ const userVouchers = computed(() => user.value?.receivedVouchers || []);
 const address = ref("");
 const products = ref([]);
 const favorites = ref([]);
+
+const searchQuery = ref('')
 
 const formatDate = (timestamp) => {
   if (!timestamp) return '';
@@ -87,18 +91,9 @@ function reorder(id) {
     return;
   }
 
-  let cartsCurrent = JSON.parse(localStorage.getItem("carts")) || [];
-
   order.items.forEach(item => {
-    const existing = cartsCurrent.find(c => c.id === item.id);
-    if (existing) {
-      existing.quantity += item.quantity;
-    } else {
-      cartsCurrent.push({ ...item });
-    }
+    store.commit('add_cart', item);
   });
-
-  localStorage.setItem("carts", JSON.stringify(cartsCurrent));
 
   alert("Đơn hàng " + id + " đã được thêm lại vào giỏ!");
 }
@@ -113,9 +108,10 @@ function saveAddress() {
   alert("Lưu địa chỉ thành công!");
 }
 
-function logout() {
-  localStorage.clear();
-  router.push("/login");
+const logout = () => {
+  localStorage.removeItem("user")
+  user.value = null
+  router.push("/login")
 }
 
 function toggleFavorite(productId) {
