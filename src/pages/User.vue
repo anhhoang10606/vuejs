@@ -9,11 +9,11 @@ const products = ref([])
 const user = ref(null)
 const searchQuery = ref("")
 const searchResults = ref([])
-
-const countCart = computed(() => store.getters.countCart)
 const favorites = ref([])
 const vouchers = ref([])
 const receivedVouchers = ref([])
+
+const countCart = computed(() => store.getters.countCart)
 
 onMounted(() => {
   const saved = JSON.parse(localStorage.getItem("products")) || []
@@ -24,16 +24,18 @@ onMounted(() => {
   if (u) {
     user.value = u
     receivedVouchers.value = u.receivedVouchers || []
+
+    const favKey = `favorites_${u.username}`
+    const fav = JSON.parse(localStorage.getItem(favKey)) || []
+    favorites.value = fav
   }
-  
-  const fav = JSON.parse(localStorage.getItem("favorites")) || []
-  favorites.value = fav
-  
+
   vouchers.value = JSON.parse(localStorage.getItem("vouchers")) || []
 })
 
 const logout = () => {
   localStorage.removeItem("user")
+  favorites.value = []
   user.value = null
   router.push("/login")
 }
@@ -59,6 +61,12 @@ const onSearch = () => {
 }
 
 const toggleFavorite = (productId) => {
+  if (!user.value) {
+    alert("Vui lòng đăng nhập để sử dụng tính năng yêu thích!")
+    router.push("/login")
+    return
+  }
+
   if (favorites.value.includes(productId)) {
     favorites.value = favorites.value.filter(id => id !== productId)
     alert("Đã bỏ yêu thích sản phẩm!")
@@ -66,7 +74,9 @@ const toggleFavorite = (productId) => {
     favorites.value.push(productId)
     alert("Đã yêu thích sản phẩm!")
   }
-  localStorage.setItem("favorites", JSON.stringify(favorites.value))
+
+  const favKey = `favorites_${user.value.username}`
+  localStorage.setItem(favKey, JSON.stringify(favorites.value))
 }
 
 const isFavorite = (productId) => favorites.value.includes(productId)

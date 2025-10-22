@@ -47,7 +47,9 @@ const handleSubmit = async () => {
   }
 
   const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+
   const payload = {
+    id: Date.now(),
     name: orderInfo.name,
     sdt: orderInfo.sdt,
     address: orderInfo.address,
@@ -61,22 +63,25 @@ const handleSubmit = async () => {
     })),
     total: totalCart.value,
     created_at: Date.now(),
-    status: 'pending',
-    user_id: currentUser?.id || null
+    status: 'Đang xử lý',
+    user_id: currentUser?.id || null,
+    username: currentUser?.username || 'guest'
   };
 
   try {
-    const res = await axios.post(`${API}/orders`, payload);
-    if (res.status === 201) {
-      clearData();
-      alert('Đã mua hàng thành công!');
-      store.commit('clear_cart');
-    }
+    const allOrders = JSON.parse(localStorage.getItem('orders') || '[]');
+    allOrders.push(payload);
+    localStorage.setItem('orders', JSON.stringify(allOrders));
+
+    clearData();
+    store.commit('clear_cart');
+    alert('Đặt hàng thành công!');
   } catch (error) {
     alert('Có lỗi xảy ra khi thanh toán!');
     console.error(error);
   }
 };
+
 </script>
 
 <template>
@@ -128,7 +133,7 @@ const handleSubmit = async () => {
           </div>
         </div>
       </div>
-      
+
       <div class="col-lg-4">
         <div class="card shadow-sm">
           <div class="card-body p-3">
@@ -145,15 +150,9 @@ const handleSubmit = async () => {
                 <tr v-for="cart in carts" :key="cart.id">
                   <td>{{ cart.name }}</td>
                   <td class="text-center">
-                    <input 
-                      type="number" 
-                      :max="cart.stock" 
-                      :min="1" 
-                      v-model.number="cart.quantity" 
-                      @change="handleQuantityChange(cart, cart.quantity)" 
-                      class="form-control form-control-sm text-center" 
-                      style="max-width: 70px;" 
-                    />
+                    <input type="number" :max="cart.stock" :min="1" v-model.number="cart.quantity"
+                      @change="handleQuantityChange(cart, cart.quantity)"
+                      class="form-control form-control-sm text-center" style="max-width: 70px;" />
                   </td>
                   <td class="text-end">
                     <button class="btn btn-sm btn-danger" @click="handleRemove(cart.id)">Xoá</button>

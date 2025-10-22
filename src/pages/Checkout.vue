@@ -117,8 +117,8 @@ const handleSubmit = () => {
     })),
     total: discountedTotal.value,
     created_at: Date.now(),
-    status: 'pending',
-    user_id: currentUser ? currentUser.id : null
+    status: 'Đang xử lý',
+    username: currentUser?.username || "guest"
   }
 
   orders.push(newOrder)

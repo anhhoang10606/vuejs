@@ -87,9 +87,9 @@
   "products": [
     {
       "id": "1",
-      "title": "Wireless Headphones",
-      "price": 7.9,
-      "category": "Electronics",
+      "title": "Wireless Headphone",
+      "price": 8,
+      "category": "Home",
       "image": "https://picsum.photos/seed/phones/120/120",
       "description": "Noise-cancelling over-ear with 30h battery."
     },

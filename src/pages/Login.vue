@@ -22,14 +22,26 @@ const login = () => {
 
   if (found) {
     localStorage.setItem("user", JSON.stringify(found));
+
+    const username = found.username;
+    const userFavorites =
+      JSON.parse(localStorage.getItem(`favorites_${username}`)) || [];
+    localStorage.setItem(`favorites_${username}`, JSON.stringify(userFavorites));
+
     if (found.role === "admin") {
       router.push("/admin");
     } else {
       router.push("/user");
     }
+
+    setTimeout(() => {
+      location.reload();
+    }, 100);
   } else {
     error.value = "Sai username hoặc password!";
   }
+
+
 };
 </script>
 
@@ -51,12 +63,16 @@ const login = () => {
       <button @click="login" class="btn btn-primary w-100">Login</button>
       <br>
       <div class="mb-3">
-        <router-link to="/register"  style="text-decoration: none; color: #007bff;">Chưa có tài khoản? Đăng ký</router-link>
+        <router-link to="/register" style="text-decoration: none; color: #007bff;">
+          Chưa có tài khoản? Đăng ký
+        </router-link>
       </div>
       <div class="mb-3">
-        <router-link to="/forgotpass"  style="text-decoration: none; color: #007bff;">Quên mật khẩu?</router-link>
+        <router-link to="/forgotpass" style="text-decoration: none; color: #007bff;">
+          Quên mật khẩu?
+        </router-link>
       </div>
-    <p v-if="error" style="color:red">{{ error }}</p>
-   </div>
+      <p v-if="error" style="color:red">{{ error }}</p>
+    </div>
   </div>
 </template>

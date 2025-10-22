@@ -7,12 +7,18 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
+function getCartKey() {
+  const currentUser = JSON.parse(localStorage.getItem('user')) || null
+  return currentUser ? `cart_${currentUser.username}` : 'cart_guest'
+}
+
 const store = createStore({
   state() {
+    const cartKey = getCartKey()
     return {
       count: 0,
       products: [],
-      carts: JSON.parse(localStorage.getItem('cart')) || [],
+      carts: JSON.parse(localStorage.getItem(cartKey)) || [],
       loading: false,
       error: null
     }
@@ -37,27 +43,50 @@ const store = createStore({
     setError(state, error) {
       state.error = error
     },
+
     add_cart(state, payload) {
       const existItem = state.carts.find(item => item.id === payload.id)
-      if (existItem) existItem.quantity++
-      else state.carts.push({ ...payload, quantity: 1 })
-      localStorage.setItem('cart', JSON.stringify(state.carts))
+      if (existItem) {
+        existItem.quantity++
+      } else {
+        state.carts.push({ ...payload, quantity: 1 })
+      }
+
+      const cartKey = getCartKey()
+      localStorage.setItem(cartKey, JSON.stringify(state.carts))
     },
+
     remove_cart(state, id) {
       state.carts = state.carts.filter(item => item.id !== id)
-      localStorage.setItem('cart', JSON.stringify(state.carts))
+      const cartKey = getCartKey()
+      localStorage.setItem(cartKey, JSON.stringify(state.carts))
     },
+
     decrease_cart(state, id) {
       const item = state.carts.find(p => p.id === id)
-      if (item && item.quantity > 1) item.quantity--
-      else state.carts = state.carts.filter(p => p.id !== id)
-      localStorage.setItem('cart', JSON.stringify(state.carts))
+      if (item && item.quantity > 1) {
+        item.quantity--
+      } else {
+        state.carts = state.carts.filter(p => p.id !== id)
+      }
+      const cartKey = getCartKey()
+      localStorage.setItem(cartKey, JSON.stringify(state.carts))
     },
+
+    update_cart_quantity(state, { id, quantity }) {
+      const item = state.carts.find(p => p.id === id)
+      if (item) item.quantity = quantity
+      const cartKey = getCartKey()
+      localStorage.setItem(cartKey, JSON.stringify(state.carts))
+    },
+
     clear_cart(state) {
       state.carts = []
-      localStorage.removeItem('cart')
+      const cartKey = getCartKey()
+      localStorage.removeItem(cartKey)
     }
   },
+
   actions: {
     increment({ commit }) {
       commit('increment')
@@ -66,6 +95,7 @@ const store = createStore({
       await sleep(3000)
       commit('increment')
     },
+
     async fetchProducts({ commit }) {
       try {
         commit('setLoading', true)
@@ -76,6 +106,11 @@ const store = createStore({
       } finally {
         commit('setLoading', false)
       }
+    },
+
+    reloadCart({ state }) {
+      const cartKey = getCartKey()
+      state.carts = JSON.parse(localStorage.getItem(cartKey)) || []
     }
   }
 })

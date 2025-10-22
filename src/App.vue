@@ -74,7 +74,7 @@ const products = reactive([
   <router-view />
   <!-- <Profile/>
   <Lab2/> -->
-  <!-- <Lab3/> -->
+  <!--<Lab3/>-->
   </div>
 
 </template>
